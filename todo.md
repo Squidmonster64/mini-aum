@@ -5,21 +5,21 @@
 - [x] Mixer home screen with vertical channel strips layout
 - [x] Channel strip UI component (volume fader, pan, mute/solo buttons)
 - [x] Add channel button and channel creation flow
-- [ ] Channel detail screen with full controls
+- [x] Channel detail screen with full controls
 - [x] Master bus section with master volume and transport controls
-- [ ] Channel routing and output selection
-- [ ] Audio engine integration (Expo Audio playback)
-- [ ] VU meters for visual feedback (master and channels)
-- [ ] Session save/load functionality
+- [x] Channel routing and output selection
+- [x] Audio engine integration (Expo Audio playback)
+- [x] VU meters for visual feedback (master and channels)
+- [x] Session save/load functionality
 - [ ] Settings screen with audio device selection
 
 ## UI/UX Polish
 
-- [ ] Dark mode theme implementation
-- [ ] Haptic feedback on interactions (faders, buttons)
-- [ ] Smooth animations for fader movements
-- [ ] Channel color picker and visual organization
-- [ ] Responsive layout for one-handed usage
+- [x] Dark mode theme implementation
+- [x] Haptic feedback on interactions (faders, buttons)
+- [x] Smooth animations for fader movements
+- [x] Channel color picker and visual organization
+- [x] Responsive layout for one-handed usage
 - [ ] Icon mapping and tab bar setup
 
 ## Branding & Configuration

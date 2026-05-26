@@ -25,6 +25,12 @@ export interface MixerState {
   activeSoloChannels: string[];
 }
 
+export interface ChannelMeter {
+  channelId: string;
+  level: number; // 0-100
+  peak: number; // 0-100
+}
+
 export interface Session {
   id: string;
   name: string;

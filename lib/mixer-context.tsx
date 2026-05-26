@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useCallback, ReactNode } from "react";
-import { Channel, MasterBus, MixerState } from "@/types/mixer";
+import { Channel, MasterBus, MixerState, ChannelMeter } from "@/types/mixer";
 
 type MixerAction =
   | { type: "ADD_CHANNEL"; payload: Channel }
@@ -11,7 +11,8 @@ type MixerAction =
   | { type: "TOGGLE_CHANNEL_SOLO"; payload: string }
   | { type: "SET_MASTER_VOLUME"; payload: number }
   | { type: "SET_PLAYING"; payload: boolean }
-  | { type: "LOAD_STATE"; payload: MixerState };
+  | { type: "LOAD_STATE"; payload: MixerState }
+  | { type: "UPDATE_METERS"; payload: ChannelMeter[] };
 
 const initialState: MixerState = {
   channels: [],
@@ -114,6 +115,7 @@ function mixerReducer(state: MixerState, action: MixerAction): MixerState {
 
 interface MixerContextType {
   state: MixerState;
+  meters: Map<string, ChannelMeter>;
   addChannel: (channel: Channel) => void;
   updateChannel: (channel: Channel) => void;
   deleteChannel: (id: string) => void;
@@ -124,12 +126,14 @@ interface MixerContextType {
   setMasterVolume: (volume: number) => void;
   setPlaying: (playing: boolean) => void;
   loadState: (state: MixerState) => void;
+  updateMeters: (meters: ChannelMeter[]) => void;
 }
 
 const MixerContext = createContext<MixerContextType | undefined>(undefined);
 
 export function MixerProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(mixerReducer, initialState);
+  const [meters, setMeters] = React.useState<Map<string, ChannelMeter>>(new Map());
 
   const addChannel = useCallback((channel: Channel) => {
     dispatch({ type: "ADD_CHANNEL", payload: channel });
@@ -171,8 +175,17 @@ export function MixerProvider({ children }: { children: ReactNode }) {
     dispatch({ type: "LOAD_STATE", payload: newState });
   }, []);
 
+  const updateMeters = useCallback((newMeters: ChannelMeter[]) => {
+    const metersMap = new Map<string, ChannelMeter>();
+    newMeters.forEach((meter) => {
+      metersMap.set(meter.channelId, meter);
+    });
+    setMeters(metersMap);
+  }, []);
+
   const value: MixerContextType = {
     state,
+    meters,
     addChannel,
     updateChannel,
     deleteChannel,
@@ -183,6 +196,7 @@ export function MixerProvider({ children }: { children: ReactNode }) {
     setMasterVolume,
     setPlaying,
     loadState,
+    updateMeters,
   };
 
   return (

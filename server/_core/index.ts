@@ -4,7 +4,7 @@ import { createServer } from "http";
 import net from "net";
 import path from "path";
 import { fileURLToPath } from "url";
-import fs from "fs";
+
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
@@ -81,16 +81,9 @@ async function startServer() {
   // Serve manifest, service worker, and mixer from public
   app.use(express.static(path.join(process.cwd(), "public")));
 
-  // Serve static web files (with caching)
-  app.use(express.static(path.join(process.cwd(), "dist/web"), { maxAge: "1h" }));
-
-  // Fallback to mixer.html for root, then dist/web/index.html for SPA
+  // Serve mixer.html at root
   app.get("/", (req, res) => {
     res.sendFile(path.join(process.cwd(), "public/mixer.html"));
-  });
-
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(process.cwd(), "dist/web/index.html"));
   });
 
   const preferredPort = parseInt(process.env.PORT || "3000");

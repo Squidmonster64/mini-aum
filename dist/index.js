@@ -798,12 +798,8 @@ async function startServer() {
     })
   );
   app.use(express.static(path.join(process.cwd(), "public")));
-  app.use(express.static(path.join(process.cwd(), "dist/web"), { maxAge: "1h" }));
   app.get("/", (req, res) => {
     res.sendFile(path.join(process.cwd(), "public/mixer.html"));
-  });
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(process.cwd(), "dist/web/index.html"));
   });
   const preferredPort = parseInt(process.env.PORT || "3000");
   const port = await findAvailablePort(preferredPort);

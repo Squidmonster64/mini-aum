@@ -4,6 +4,7 @@ import { createServer } from "http";
 import net from "net";
 import path from "path";
 import { fileURLToPath } from "url";
+import fs from "fs";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
@@ -12,6 +13,7 @@ import { createContext } from "./context";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const cwd = process.cwd();
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise((resolve) => {
@@ -76,13 +78,17 @@ async function startServer() {
     }),
   );
 
-  // Serve manifest and service worker from public
+  // Serve manifest, service worker, and mixer from public
   app.use(express.static(path.join(process.cwd(), "public")));
 
-  // Serve static web files
+  // Serve static web files (with caching)
   app.use(express.static(path.join(process.cwd(), "dist/web"), { maxAge: "1h" }));
 
-  // Fallback to index.html for SPA routing (must be last)
+  // Fallback to mixer.html for root, then dist/web/index.html for SPA
+  app.get("/", (req, res) => {
+    res.sendFile(path.join(process.cwd(), "public/mixer.html"));
+  });
+
   app.get("*", (req, res) => {
     res.sendFile(path.join(process.cwd(), "dist/web/index.html"));
   });

@@ -745,6 +745,7 @@ async function createContext(opts) {
 // server/_core/index.ts
 var __filename = fileURLToPath(import.meta.url);
 var __dirname = path.dirname(__filename);
+var cwd = process.cwd();
 function isPortAvailable(port) {
   return new Promise((resolve) => {
     const server = net.createServer();
@@ -798,6 +799,9 @@ async function startServer() {
   );
   app.use(express.static(path.join(process.cwd(), "public")));
   app.use(express.static(path.join(process.cwd(), "dist/web"), { maxAge: "1h" }));
+  app.get("/", (req, res) => {
+    res.sendFile(path.join(process.cwd(), "public/mixer.html"));
+  });
   app.get("*", (req, res) => {
     res.sendFile(path.join(process.cwd(), "dist/web/index.html"));
   });

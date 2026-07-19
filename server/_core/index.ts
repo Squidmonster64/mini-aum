@@ -60,21 +60,12 @@ async function startServer() {
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
+  // API routes first
   registerStorageProxy(app);
   registerOAuthRoutes(app);
 
-  // Serve static web files
-  app.use(express.static("dist/web", { maxAge: "1h" }));
-
   app.get("/api/health", (_req, res) => {
     res.json({ ok: true, timestamp: Date.now() });
-  });
-
-  // Fallback to index.html for SPA routing
-  app.get("*", (req, res) => {
-    if (!req.path.startsWith("/api")) {
-      res.sendFile("dist/web/index.html", { root: process.cwd() });
-    }
   });
 
   app.use(
@@ -85,8 +76,16 @@ async function startServer() {
     }),
   );
 
-  // Serve manifest and service worker
-  app.use(express.static("public"));
+  // Serve manifest and service worker from public
+  app.use(express.static(path.join(process.cwd(), "public")));
+
+  // Serve static web files
+  app.use(express.static(path.join(process.cwd(), "dist/web"), { maxAge: "1h" }));
+
+  // Fallback to index.html for SPA routing (must be last)
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(process.cwd(), "dist/web/index.html"));
+  });
 
   const preferredPort = parseInt(process.env.PORT || "3000");
   const port = await findAvailablePort(preferredPort);

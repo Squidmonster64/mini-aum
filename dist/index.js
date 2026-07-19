@@ -766,48 +766,76 @@ async function findAvailablePort(startPort = 3e3) {
 async function startServer() {
   const app = express();
   const server = createServer(app);
-  app.use((req, res, next) => {
-    const origin = req.headers.origin;
-    if (origin) {
-      res.header("Access-Control-Allow-Origin", origin);
-    }
-    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-    res.header(
-      "Access-Control-Allow-Headers",
-      "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+  process.on("uncaughtException", (error) => {
+    console.error("[ERROR] Uncaught exception:", error);
+    process.exit(1);
+  });
+  process.on("unhandledRejection", (reason, promise) => {
+    console.error("[ERROR] Unhandled rejection at:", promise, "reason:", reason);
+  });
+  try {
+    app.use((req, res, next) => {
+      const origin = req.headers.origin;
+      if (origin) {
+        res.header("Access-Control-Allow-Origin", origin);
+      }
+      res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+      res.header(
+        "Access-Control-Allow-Headers",
+        "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+      );
+      res.header("Access-Control-Allow-Credentials", "true");
+      if (req.method === "OPTIONS") {
+        res.sendStatus(200);
+        return;
+      }
+      next();
+    });
+    app.use(express.json({ limit: "50mb" }));
+    app.use(express.urlencoded({ limit: "50mb", extended: true }));
+    registerStorageProxy(app);
+    registerOAuthRoutes(app);
+    app.get("/api/health", (_req, res) => {
+      res.json({ ok: true, timestamp: Date.now() });
+    });
+    app.use(
+      "/api/trpc",
+      createExpressMiddleware({
+        router: appRouter,
+        createContext
+      })
     );
-    res.header("Access-Control-Allow-Credentials", "true");
-    if (req.method === "OPTIONS") {
-      res.sendStatus(200);
-      return;
+    app.use(express.static(path.join(process.cwd(), "public")));
+    app.get("/", (req, res) => {
+      const filePath = path.join(process.cwd(), "public/mixer.html");
+      res.sendFile(filePath, (err) => {
+        if (err) {
+          console.error("[ERROR] Failed to send mixer.html:", err);
+          res.status(500).json({ error: "Failed to load mixer" });
+        }
+      });
+    });
+    app.use((req, res) => {
+      res.status(404).json({ error: "Not found", path: req.path });
+    });
+    const preferredPort = parseInt(process.env.PORT || "3000");
+    const port = await findAvailablePort(preferredPort);
+    if (port !== preferredPort) {
+      console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
     }
-    next();
-  });
-  app.use(express.json({ limit: "50mb" }));
-  app.use(express.urlencoded({ limit: "50mb", extended: true }));
-  registerStorageProxy(app);
-  registerOAuthRoutes(app);
-  app.get("/api/health", (_req, res) => {
-    res.json({ ok: true, timestamp: Date.now() });
-  });
-  app.use(
-    "/api/trpc",
-    createExpressMiddleware({
-      router: appRouter,
-      createContext
-    })
-  );
-  app.use(express.static(path.join(process.cwd(), "public")));
-  app.get("/", (req, res) => {
-    res.sendFile(path.join(process.cwd(), "public/mixer.html"));
-  });
-  const preferredPort = parseInt(process.env.PORT || "3000");
-  const port = await findAvailablePort(preferredPort);
-  if (port !== preferredPort) {
-    console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
+    server.listen(port, () => {
+      console.log(`[api] server listening on port ${port}`);
+    });
+    process.on("SIGTERM", () => {
+      console.log("[api] SIGTERM received, shutting down gracefully");
+      server.close(() => {
+        console.log("[api] Server closed");
+        process.exit(0);
+      });
+    });
+  } catch (error) {
+    console.error("[ERROR] Failed to start server:", error);
+    process.exit(1);
   }
-  server.listen(port, () => {
-    console.log(`[api] server listening on port ${port}`);
-  });
 }
-startServer().catch(console.error);
+startServer();

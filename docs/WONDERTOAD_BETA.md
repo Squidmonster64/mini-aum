@@ -9,10 +9,35 @@ Wondertoad owns sample search, metadata and protected file delivery. Mini AUM ow
 Wondertoad opens:
 
 ```text
-miniaum://wondertoad?token=<one-time-handoff-token>
+miniaum://wondertoad?token=<handoff-token>
 ```
 
-The token must be short-lived and must not contain Dropbox credentials, Dropbox URLs, the Wondertoad app passphrase, or the admin sync token.
+The token is a short-lived handoff lease. The beta Worker encrypts its candidate IDs, context and expiry using an AES-GCM key derived from the existing Wondertoad admin secret; the token itself contains no readable Dropbox credentials, Dropbox URLs, Wondertoad passphrase or admin sync token. The lease lasts 10 minutes and may be reused during that window for resolve plus audio range/file requests, then expires.
+
+## Create handoff
+
+The authenticated Wondertoad UI creates a handoff for the selected sample:
+
+```http
+POST /api/samples/<sample-id>/handoff
+Content-Type: application/json
+```
+
+Optional body:
+
+```json
+{
+  "candidateIds": [123, 456, 789],
+  "activeIndex": 0,
+  "context": {
+    "name": "Sketch 08",
+    "bpm": 126,
+    "key": "Am"
+  }
+}
+```
+
+When `candidateIds` is omitted, Wondertoad builds a candidate queue from instrument/category/type/genre and BPM proximity, then fills from the searchable Dropbox-backed catalogue when needed. The beta cap is 12 candidates.
 
 ## Resolve handoff
 
@@ -50,7 +75,7 @@ Expected response:
 }
 ```
 
-`streamUrl` must be a Wondertoad-controlled short-lived endpoint. Do not expose Dropbox refresh tokens or long-lived Dropbox links to Mini AUM.
+`streamUrl` is a Wondertoad-controlled endpoint protected by the same short-lived handoff lease. It delegates to the existing Dropbox streaming layer and supports the underlying range requests without exposing Dropbox refresh tokens or long-lived Dropbox links to Mini AUM.
 
 ## Mini AUM behaviour
 
@@ -73,11 +98,13 @@ This value is an origin, not a secret.
 
 ## Smoke test
 
-1. Open a valid `miniaum://wondertoad?token=...` link on iOS.
-2. Confirm the handoff resolves without exposing credentials in the URL.
-3. Confirm the candidate starts playing.
-4. Toggle LOOP and SYNC.
-5. PREV/NEXT through at least three candidates.
-6. Tap KEEP IN SESSION.
-7. Confirm the app returns to the mixer and the kept sample is present as a channel.
-8. Save and reload the session; confirm the Wondertoad sample reference remains attached.
+1. From authenticated Wondertoad, create a handoff and obtain its `miniaum://wondertoad?token=...` deep link.
+2. Open that deep link on iOS.
+3. Confirm the handoff resolves without exposing credentials in the URL or payload.
+4. Confirm the active candidate starts playing.
+5. Toggle LOOP and SYNC.
+6. PREV/NEXT through at least three candidates.
+7. Tap KEEP IN SESSION.
+8. Confirm the app returns to the mixer and the kept sample is present as a channel.
+9. Save and reload the session; confirm the Wondertoad sample reference remains attached.
+10. Confirm an expired/tampered handoff token is rejected and a candidate not present in the lease cannot be streamed.

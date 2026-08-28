@@ -10,6 +10,8 @@ The Mini AUM client implementation lives on this beta branch. The matching Wonde
 
 The Mini AUM beta branch is deployed separately from production for smoke testing. End-to-end testing is gated on the Wondertoad Cloudflare Worker bootstrap completing and `EXPO_PUBLIC_WONDERTOAD_URL` being set to that Worker origin.
 
+This document is the frozen beta interface contract; implementation changes must preserve it until the smoke pass is complete.
+
 ## Deep link
 
 Wondertoad opens:

@@ -8,7 +8,7 @@ Wondertoad owns sample search, metadata and protected file delivery. Mini AUM ow
 
 The Mini AUM client implementation lives on this beta branch. The matching Wondertoad handoff implementation is in the canonical Dropbox Worker source at `PWA/src/secure-worker.js`. It deliberately does not duplicate the Wondertoad Worker into this repository.
 
-The Mini AUM beta branch is deployed separately from production for smoke testing. End-to-end testing is gated on the Wondertoad Cloudflare Worker bootstrap completing and `EXPO_PUBLIC_WONDERTOAD_URL` being set to that Worker origin.
+The Mini AUM beta branch is deployed separately from production for smoke testing at `https://mini-aum-beta-production.up.railway.app`. End-to-end testing is gated on the Wondertoad Cloudflare Worker bootstrap completing and `EXPO_PUBLIC_WONDERTOAD_URL` being set to that Worker origin.
 
 This document is the frozen beta interface contract; implementation changes must preserve it until the smoke pass is complete.
 

@@ -18,7 +18,7 @@ Wondertoad opens:
 miniaum://wondertoad?token=<handoff-token>
 ```
 
-The token is a short-lived handoff lease. The beta Worker encrypts its candidate IDs, context and expiry using an AES-GCM key derived from the existing Wondertoad admin secret; the token itself contains no readable Dropbox credentials, Dropbox URLs, Wondertoad passphrase or admin sync token. The lease lasts 10 minutes and may be reused during that window for resolve plus audio range/file requests, then expires.
+The token is a short-lived handoff lease. The beta Worker encrypts its candidate IDs, context and expiry using an AES-GCM key derived from the existing Wondertoad admin secret; the token itself contains no readable Dropbox credentials, Dropbox URLs, Wondertoad passphrase or admin sync token. The lease lasts 10 minutes and may be reused during that window for resolve plus audio range/file requests, then expires. Each candidate file endpoint also checks that the requested sample ID is present in the encrypted lease.
 
 ## Create handoff
 

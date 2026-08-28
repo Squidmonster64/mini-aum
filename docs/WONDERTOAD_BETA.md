@@ -4,6 +4,10 @@
 
 Wondertoad owns sample search, metadata and protected file delivery. Mini AUM owns in-context audition and session keep.
 
+## Implementation state
+
+The Mini AUM client implementation lives on this beta branch. The matching Wondertoad handoff implementation is in the canonical Dropbox Worker source at `PWA/src/secure-worker.js`. It deliberately does not duplicate the Wondertoad Worker into this repository.
+
 ## Deep link
 
 Wondertoad opens:

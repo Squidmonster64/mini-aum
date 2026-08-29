@@ -18,12 +18,22 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
 
-  // Documents and APIs are network-first so a deployed mixer or handoff is never
-  // trapped behind an old service-worker cache.
-  if (event.request.mode === 'navigate' || url.pathname.startsWith('/api/')) {
+  // APIs are always network-only: returning HTML/manifest data to an API caller
+  // produces misleading parse errors when the device is offline.
+  if (url.pathname.startsWith('/api/')) {
     event.respondWith(
-      fetch(event.request).catch(() => caches.match(event.request).then((r) => r || caches.match('/manifest.json')))
+      fetch(event.request).catch(() => new Response(
+        JSON.stringify({ error: 'Offline' }),
+        { status: 503, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } },
+      ))
     );
+    return;
+  }
+
+  // Navigations are network-first so newly deployed studio shells replace the
+  // original decorative mixer immediately after a beta upgrade.
+  if (event.request.mode === 'navigate') {
+    event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
     return;
   }
 

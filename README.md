@@ -38,4 +38,4 @@ The Beta 2 desktop/mobile studio design is in the project Figma file on page `Be
 
 `tests/web-studio.contract.test.ts` prevents regression to the decorative mixer and checks browser asset syntax, source loading controls, Tone/MIDI foundations, MIDI-editor wiring, Wondertoad proxy range support, and service-worker cache behaviour.
 
-Production `main` remains unchanged until the beta smoke test passes.
+The isolated Railway beta deployment is separate from the existing Mini AUM production service. Production `main` remains unchanged until the beta smoke test passes.

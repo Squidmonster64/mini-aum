@@ -1,14 +1,25 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { spawnSync } from "node:child_process";
 
 const root = process.cwd();
-const mixer = readFileSync(join(root, "public", "mixer.html"), "utf8");
-const studio = readFileSync(join(root, "public", "studio.js"), "utf8");
+const mixerPath = join(root, "public", "mixer.html");
+const studioPath = join(root, "public", "studio.js");
+const swPath = join(root, "public", "service-worker.js");
+const mixer = readFileSync(mixerPath, "utf8");
+const studio = readFileSync(studioPath, "utf8");
 const server = readFileSync(join(root, "server", "_core", "index.ts"), "utf8");
-const sw = readFileSync(join(root, "public", "service-worker.js"), "utf8");
+const sw = readFileSync(swPath, "utf8");
 
 describe("Mini AUM web studio beta contract", () => {
+  it("ships syntactically valid browser JavaScript", () => {
+    for (const file of [studioPath, swPath]) {
+      const result = spawnSync(process.execPath, ["--check", file], { encoding: "utf8" });
+      expect(result.status, `${file}: ${result.stderr}`).toBe(0);
+    }
+  });
+
   it("does not ship the old decorative demo mixer", () => {
     expect(mixer).not.toContain("Playback started!");
     expect(mixer).not.toContain("slider-vertical");

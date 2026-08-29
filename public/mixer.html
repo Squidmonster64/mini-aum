@@ -1,196 +1,157 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mini AUM - Audio Mixer</title>
-    <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#0a7ea4">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: #151718;
-            color: #ECEDEE;
-            padding: 16px;
-            min-height: 100vh;
-        }
-        .container { max-width: 100%; overflow-x: auto; }
-        h1 { font-size: 24px; margin-bottom: 20px; text-align: center; }
-        .mixer { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 20px; }
-        .channel {
-            flex-shrink: 0;
-            width: 60px;
-            background: #1e2022;
-            border: 1px solid #334155;
-            border-radius: 8px;
-            padding: 12px 8px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .channel.drums { border-left: 3px solid #EF4444; }
-        .channel.bass { border-left: 3px solid #F59E0B; }
-        .channel.guitar { border-left: 3px solid #22C55E; }
-        .channel.vocals { border-left: 3px solid #3B82F6; }
-        .channel.keys { border-left: 3px solid #A855F7; }
-        .channel.strings { border-left: 3px solid #EC4899; }
-        .channel-name { font-size: 12px; font-weight: 600; text-align: center; }
-        .fader-container { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; }
-        input[type="range"] { width: 100%; height: 120px; writing-mode: bt-lr; appearance: slider-vertical; }
-        .controls { display: flex; gap: 4px; }
-        button {
-            flex: 1;
-            padding: 6px;
-            background: #0a7ea4;
-            border: none;
-            border-radius: 4px;
-            color: white;
-            font-size: 11px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        button:active { opacity: 0.8; }
-        button.active { background: #22C55E; }
-        .master { margin-top: 20px; background: #1e2022; border: 2px solid #0a7ea4; border-radius: 8px; padding: 16px; }
-        .master-label { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
-        .master-controls { display: flex; gap: 12px; }
-        .master-fader { flex: 1; }
-        .master-buttons { display: flex; gap: 8px; }
-        .master-buttons button { flex: 1; padding: 12px; }
-        .vu-meter { 
-            width: 100%;
-            height: 4px;
-            background: #334155;
-            border-radius: 2px;
-            margin-top: 4px;
-            overflow: hidden;
-        }
-        .vu-bar { height: 100%; background: #22C55E; width: 75%; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#090b0e">
+  <title>Mini AUM — Studio</title>
+  <link rel="manifest" href="/manifest.json">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg:#090b0e; --panel:#12161d; --panel2:#181e27; --line:#2c3440;
+      --text:#f1f4f7; --muted:#8f9baa; --lime:#b7f34a; --cyan:#55c3f4;
+      --amber:#f7ad37; --red:#ef5660; --radius:16px;
+    }
+    * { box-sizing:border-box; }
+    html,body { margin:0; min-height:100%; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif; }
+    body { padding:calc(14px + env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) calc(18px + env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left)); }
+    button,input { font:inherit; }
+    button { color:var(--text); background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:10px 13px; font-size:12px; font-weight:750; cursor:pointer; }
+    button:hover { border-color:#46515f; }
+    button:active { transform:translateY(1px); }
+    button.primary { background:var(--lime); color:#0a0d0f; border-color:var(--lime); }
+    button.cyan { background:var(--cyan); color:#091015; border-color:var(--cyan); }
+    button.danger { color:#ff9da4; }
+    button.active { border-color:var(--lime); color:var(--lime); }
+    button:disabled { opacity:.45; cursor:not-allowed; transform:none; }
+    .app { max-width:1500px; margin:0 auto; }
+    .topbar { display:flex; align-items:center; gap:12px; padding:4px 0 16px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+    .brand { margin-right:auto; min-width:190px; }
+    .brand h1 { margin:0; font-size:25px; line-height:1; letter-spacing:-.5px; }
+    .eyebrow { margin-top:7px; color:var(--muted); font-size:10px; font-weight:800; letter-spacing:1.2px; }
+    .status { display:inline-flex; align-items:center; gap:7px; color:var(--muted); font-size:11px; }
+    .dot { width:8px; height:8px; border-radius:50%; background:#535d69; }
+    .dot.ok { background:var(--lime); box-shadow:0 0 0 3px rgba(183,243,74,.1); }
+    .transport { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .tempo { display:flex; align-items:center; gap:7px; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:5px 9px; }
+    .tempo label { color:var(--muted); font-size:10px; font-weight:800; }
+    .tempo input { width:62px; color:var(--text); background:transparent; border:0; outline:0; font-weight:800; font-size:15px; }
+    .section-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:22px 0 10px; }
+    .section-head h2 { margin:0; font-size:11px; color:var(--muted); letter-spacing:1.1px; }
+    .section-head .hint { color:var(--muted); font-size:11px; }
+    .channels { display:grid; grid-template-columns:repeat(4,minmax(230px,1fr)); gap:12px; }
+    .channel { min-width:0; border:1px solid var(--line); border-top-width:3px; background:var(--panel); border-radius:var(--radius); padding:14px; position:relative; }
+    .channel.selected { border-color:var(--cyan); box-shadow:0 0 0 1px rgba(85,195,244,.2); }
+    .channel-top { display:flex; align-items:flex-start; gap:10px; }
+    .channel-id { color:var(--muted); font-size:10px; font-weight:800; letter-spacing:1px; }
+    .channel-name { font-size:17px; font-weight:800; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .source { margin:13px 0 10px; padding:11px; background:var(--panel2); border-radius:11px; min-height:72px; }
+    .source-label { color:var(--muted); font-size:9px; font-weight:850; letter-spacing:1px; }
+    .source-name { margin-top:5px; color:var(--cyan); font-size:13px; font-weight:760; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .source-name.empty { color:var(--amber); }
+    .source-meta { margin-top:5px; color:var(--muted); font-size:10px; line-height:1.35; min-height:14px; }
+    .load-row { display:flex; gap:7px; margin-bottom:13px; }
+    .load-row button { flex:1; padding:8px 7px; }
+    .control { margin-top:12px; }
+    .control-head { display:flex; justify-content:space-between; color:var(--muted); font-size:10px; font-weight:700; margin-bottom:6px; }
+    input[type="range"] { appearance:none; -webkit-appearance:none; width:100%; height:24px; background:transparent; margin:0; }
+    input[type="range"]::-webkit-slider-runnable-track { height:6px; border-radius:99px; background:linear-gradient(90deg,var(--lime) 0 var(--pct,50%),var(--line) var(--pct,50%) 100%); }
+    input.pan::-webkit-slider-runnable-track { background:linear-gradient(90deg,var(--line),var(--cyan),var(--line)); }
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:#fff; border:2px solid #d8dee6; margin-top:-6px; box-shadow:0 1px 4px rgba(0,0,0,.45); }
+    input[type="range"]::-moz-range-track { height:6px; border-radius:99px; background:var(--line); }
+    input[type="range"]::-moz-range-thumb { width:16px; height:16px; border-radius:50%; background:#fff; border:2px solid #d8dee6; }
+    .buttons { display:grid; grid-template-columns:repeat(4,1fr); gap:7px; margin-top:12px; }
+    .buttons button { padding:8px 5px; }
+    .master { margin-top:12px; border:1px solid var(--line); background:var(--panel); border-radius:var(--radius); padding:13px; display:grid; grid-template-columns:1fr auto; gap:16px; align-items:end; }
+    .master .control { margin:0; }
+    .audition { display:none; margin-top:18px; border:1px solid rgba(183,243,74,.4); background:linear-gradient(180deg,rgba(183,243,74,.06),var(--panel)); border-radius:var(--radius); padding:15px; }
+    .audition.visible { display:block; }
+    .audition-grid { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:14px; align-items:center; }
+    .audition h3 { margin:4px 0; font-size:18px; }
+    .meta { color:var(--muted); font-size:11px; }
+    .audition-actions { display:flex; gap:7px; flex-wrap:wrap; }
+    .midi-shell { margin-top:18px; border:1px solid var(--line); background:var(--panel); border-radius:var(--radius); overflow:hidden; }
+    .midi-head { display:flex; align-items:center; gap:12px; padding:14px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+    .midi-head .title { font-size:16px; font-weight:800; margin-right:auto; }
+    .midi-empty { padding:38px 18px; color:var(--muted); text-align:center; }
+    .midi-body { display:none; grid-template-columns:minmax(0,1fr) 240px; min-height:340px; }
+    .midi-body.visible { display:grid; }
+    .roll-wrap { overflow:auto; padding:12px; }
+    .roll { position:relative; width:960px; height:300px; border-radius:10px; overflow:hidden; background-color:#0b0e13; background-image:linear-gradient(to right,rgba(143,155,170,.18) 1px,transparent 1px),linear-gradient(to bottom,rgba(143,155,170,.12) 1px,transparent 1px); background-size:60px 100%,100% 25px; border:1px solid #222a34; }
+    .note { position:absolute; min-width:8px; height:18px; border-radius:4px; background:var(--cyan); border:1px solid rgba(255,255,255,.18); cursor:pointer; }
+    .note:nth-child(3n) { background:var(--lime); }
+    .note.selected { outline:2px solid #fff; z-index:2; }
+    .inspector { border-left:1px solid var(--line); padding:14px; background:var(--panel2); }
+    .inspector h3 { margin:0 0 4px; font-size:11px; color:var(--muted); letter-spacing:1px; }
+    .note-name { font-size:30px; font-weight:850; margin:8px 0; }
+    .kv { display:grid; grid-template-columns:1fr auto; gap:7px; font-size:11px; margin:12px 0; }
+    .kv span:nth-child(odd) { color:var(--muted); }
+    .edit-row { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:10px; }
+    .edit-row button { padding:8px 4px; }
+    .foot { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; color:var(--muted); font-size:10px; padding:16px 2px 2px; }
+    .toast { position:fixed; left:50%; bottom:calc(20px + env(safe-area-inset-bottom)); transform:translateX(-50%); background:#202630; border:1px solid #394453; padding:10px 14px; border-radius:12px; color:var(--text); font-size:12px; z-index:20; max-width:min(90vw,560px); box-shadow:0 8px 30px rgba(0,0,0,.4); }
+    .hidden { display:none !important; }
+    @media(max-width:1100px){ .channels{grid-template-columns:repeat(2,minmax(240px,1fr));} }
+    @media(max-width:720px){
+      body{padding-left:12px;padding-right:12px}.topbar{align-items:flex-start}.brand{width:100%}.transport{width:100%}.transport button{flex:1}.tempo{flex:1;justify-content:space-between}.channels{grid-template-columns:1fr}.channel{padding:13px}.master{grid-template-columns:1fr}.audition-grid{grid-template-columns:1fr}.audition-actions button{flex:1}.midi-body.visible{grid-template-columns:1fr}.inspector{border-left:0;border-top:1px solid var(--line)}.section-head .hint{display:none}.foot{display:block;line-height:1.6}
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🎵 Mini AUM</h1>
-        
-        <div class="mixer">
-            <div class="channel drums">
-                <div class="channel-name">Drums</div>
-                <div class="fader-container">
-                    <input type="range" min="0" max="100" value="75" class="volume">
-                </div>
-                <div class="vu-meter"><div class="vu-bar" style="width: 75%;"></div></div>
-                <div class="controls">
-                    <button class="mute">M</button>
-                    <button class="solo">S</button>
-                </div>
-            </div>
-
-            <div class="channel bass">
-                <div class="channel-name">Bass</div>
-                <div class="fader-container">
-                    <input type="range" min="0" max="100" value="70" class="volume">
-                </div>
-                <div class="vu-meter"><div class="vu-bar" style="width: 70%;"></div></div>
-                <div class="controls">
-                    <button class="mute">M</button>
-                    <button class="solo">S</button>
-                </div>
-            </div>
-
-            <div class="channel guitar">
-                <div class="channel-name">Guitar</div>
-                <div class="fader-container">
-                    <input type="range" min="0" max="100" value="60" class="volume">
-                </div>
-                <div class="vu-meter"><div class="vu-bar" style="width: 60%;"></div></div>
-                <div class="controls">
-                    <button class="mute">M</button>
-                    <button class="solo">S</button>
-                </div>
-            </div>
-
-            <div class="channel vocals">
-                <div class="channel-name">Vocals</div>
-                <div class="fader-container">
-                    <input type="range" min="0" max="100" value="80" class="volume">
-                </div>
-                <div class="vu-meter"><div class="vu-bar" style="width: 80%;"></div></div>
-                <div class="controls">
-                    <button class="mute">M</button>
-                    <button class="solo">S</button>
-                </div>
-            </div>
-
-            <div class="channel keys">
-                <div class="channel-name">Keys</div>
-                <div class="fader-container">
-                    <input type="range" min="0" max="100" value="65" class="volume">
-                </div>
-                <div class="vu-meter"><div class="vu-bar" style="width: 65%;"></div></div>
-                <div class="controls">
-                    <button class="mute">M</button>
-                    <button class="solo">S</button>
-                </div>
-            </div>
-
-            <div class="channel strings">
-                <div class="channel-name">Strings</div>
-                <div class="fader-container">
-                    <input type="range" min="0" max="100" value="55" class="volume">
-                </div>
-                <div class="vu-meter"><div class="vu-bar" style="width: 55%;"></div></div>
-                <div class="controls">
-                    <button class="mute">M</button>
-                    <button class="solo">S</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="master">
-            <div class="master-label">Master</div>
-            <div class="master-controls">
-                <div class="master-fader">
-                    <input type="range" min="0" max="100" value="80" class="volume" style="width: 100%; height: 30px;">
-                    <div class="vu-meter"><div class="vu-bar" style="width: 80%;"></div></div>
-                </div>
-            </div>
-            <div class="master-buttons" style="margin-top: 12px;">
-                <button id="play">▶ Play</button>
-                <button id="stop">⏹ Stop</button>
-            </div>
-        </div>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <h1>Mini AUM</h1>
+      <div class="eyebrow">REAL AUDIO · WONDERTOAD · MIDI</div>
     </div>
+    <div class="status"><span id="wtDot" class="dot"></span><span id="wtStatus">Checking Wondertoad…</span></div>
+    <div class="transport">
+      <div class="tempo"><label for="tempo">TEMPO</label><input id="tempo" type="number" min="40" max="240" value="124"><span class="meta">BPM</span></div>
+      <button id="openWondertoad">OPEN WONDERTOAD</button>
+      <button id="topAudio">+ AUDIO</button>
+      <button id="topMidi">+ MIDI</button>
+      <button id="play" class="primary">▶ PLAY</button>
+      <button id="stop">■ STOP</button>
+    </div>
+  </header>
 
-    <script>
-        // Register service worker
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/service-worker.js').catch(() => {});
-        }
+  <section>
+    <div class="section-head"><h2>CHANNELS</h2><div class="hint">Select a channel, then load audio or MIDI. No demo sound is hidden behind the strips.</div></div>
+    <div id="channels" class="channels"></div>
+    <div class="master">
+      <div class="control"><div class="control-head"><span>MASTER VOLUME</span><span id="masterValue">−3.0 dB</span></div><input id="master" type="range" min="-36" max="6" step="0.5" value="-3"></div>
+      <button id="addChannel">+ CHANNEL</button>
+    </div>
+  </section>
 
-        // Fader interactions
-        document.querySelectorAll('input[type="range"]').forEach(fader => {
-            fader.addEventListener('input', (e) => {
-                const value = e.target.value;
-                const meter = e.target.closest('.channel, .master-fader').querySelector('.vu-bar');
-                if (meter) meter.style.width = value + '%';
-            });
-        });
+  <section id="audition" class="audition">
+    <div class="audition-grid">
+      <div><div class="eyebrow" style="color:var(--lime)">WONDERTOAD AUDITION</div><h3 id="auditionName">—</h3><div id="auditionMeta" class="meta"></div></div>
+      <div class="audition-actions"><button id="prevCandidate">← PREV</button><button id="auditionPlay" class="primary">▶ AUDITION</button><button id="nextCandidate">NEXT →</button><button id="keepCandidate" class="cyan">KEEP IN CHANNEL</button></div>
+    </div>
+  </section>
 
-        // Mute/Solo buttons
-        document.querySelectorAll('.mute, .solo').forEach(btn => {
-            btn.addEventListener('click', () => {
-                btn.classList.toggle('active');
-            });
-        });
+  <section class="midi-shell">
+    <div class="midi-head"><div><div class="eyebrow" style="color:var(--cyan)">MIDI EDITOR</div><div id="midiTitle" class="title">No MIDI loaded</div></div><button id="importMidi">IMPORT MIDI</button><button id="addNote" disabled>+ NOTE</button></div>
+    <div id="midiEmpty" class="midi-empty">Import a .mid file to create playable MIDI channels and see the actual notes. Double-click the piano roll to add a note.</div>
+    <div id="midiBody" class="midi-body">
+      <div class="roll-wrap"><div id="roll" class="roll" title="Double-click to add a note"></div></div>
+      <aside class="inspector">
+        <h3>SELECTED NOTE</h3><div id="noteName" class="note-name">—</div>
+        <div class="kv"><span>Start</span><span id="noteStart">—</span><span>Length</span><span id="noteLength">—</span><span>Velocity</span><span id="noteVelocity">—</span></div>
+        <div class="edit-row"><button data-transpose="-12">−12</button><button data-transpose="-1">−1</button><button data-transpose="1">+1</button><button data-transpose="12">+12</button></div>
+        <div class="control"><div class="control-head"><span>VELOCITY</span><span id="velocityValue">—</span></div><input id="velocity" type="range" min="1" max="127" value="100" disabled></div>
+        <button id="deleteNote" class="danger" style="width:100%;margin-top:10px" disabled>DELETE NOTE</button>
+      </aside>
+    </div>
+  </section>
 
-        // Play/Stop
-        document.getElementById('play').addEventListener('click', () => {
-            alert('▶ Playback started!');
-        });
-        document.getElementById('stop').addEventListener('click', () => {
-            alert('⏹ Playback stopped!');
-        });
-    </script>
+  <div class="foot"><span>Audio engine: Tone.js 15.1.22 (MIT). MIDI parser: @tonejs/midi 2.0.28 (MIT).</span><span id="engineStatus">Audio engine idle</span></div>
+</div>
+<input id="audioPicker" type="file" accept="audio/*,.wav,.wave,.aif,.aiff,.flac,.mp3,.m4a,.aac,.ogg" hidden>
+<input id="midiPicker" type="file" accept=".mid,.midi,audio/midi,audio/x-midi" hidden>
+<div id="toast" class="toast hidden"></div>
+<script type="module" src="/studio.js"></script>
 </body>
 </html>

@@ -2,6 +2,17 @@
  * Mixer types and interfaces
  */
 
+export interface SampleReference {
+  wondertoadId: string;
+  uri: string;
+  filename: string;
+  bpm?: number | null;
+  key?: string | null;
+  sampleType?: string | null;
+  instrument?: string | null;
+  genre?: string | null;
+}
+
 export interface Channel {
   id: string;
   name: string;
@@ -11,6 +22,11 @@ export interface Channel {
   solo: boolean;
   color: string; // hex color
   outputRoute: string; // "master" or channel id
+  sourceType?: "sample" | "file" | "input" | "aux";
+  sampleRef?: SampleReference;
+  loop?: boolean;
+  sync?: boolean;
+  playbackRate?: number;
 }
 
 export interface MasterBus {

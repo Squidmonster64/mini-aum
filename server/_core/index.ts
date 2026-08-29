@@ -3,6 +3,7 @@ import express from "express";
 import { createServer } from "http";
 import net from "net";
 import path from "path";
+import { Readable } from "stream";
 import { fileURLToPath } from "url";
 
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
@@ -14,6 +15,19 @@ import { createContext } from "./context";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const cwd = process.cwd();
+
+const wondertoadBase = () =>
+  (process.env.EXPO_PUBLIC_WONDERTOAD_URL || process.env.WONDERTOAD_URL || "")
+    .trim()
+    .replace(/\/$/, "");
+
+function validHandoffToken(value: string) {
+  return /^[A-Za-z0-9_-]{40,4096}$/.test(value);
+}
+
+function validSampleKey(value: string) {
+  return /^sample-\d+$/.test(value);
+}
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise((resolve) => {
@@ -59,7 +73,7 @@ async function startServer() {
       res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
       res.header(
         "Access-Control-Allow-Headers",
-        "Origin, X-Requested-With, Content-Type, Accept, Authorization",
+        "Origin, X-Requested-With, Content-Type, Accept, Authorization, Range",
       );
       res.header("Access-Control-Allow-Credentials", "true");
 
@@ -74,12 +88,111 @@ async function startServer() {
     app.use(express.json({ limit: "50mb" }));
     app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
-  // API routes first
+    // API routes first
     registerStorageProxy(app);
     registerOAuthRoutes(app);
 
     app.get("/api/health", (_req, res) => {
       res.json({ ok: true, timestamp: Date.now() });
+    });
+
+    // Wondertoad handoff proxy. The browser never receives Dropbox credentials and
+    // does not need cross-origin access to the private Wondertoad Worker.
+    app.get("/api/wondertoad/health", async (_req, res) => {
+      const base = wondertoadBase();
+      if (!base) {
+        res.status(503).json({ ok: false, error: "Wondertoad URL is not configured" });
+        return;
+      }
+      try {
+        const upstream = await fetch(`${base}/api/health`, {
+          headers: { accept: "application/json" },
+        });
+        const body = await upstream.text();
+        res.status(upstream.status).type(upstream.headers.get("content-type") || "application/json").send(body);
+      } catch (error) {
+        res.status(502).json({ ok: false, error: error instanceof Error ? error.message : String(error) });
+      }
+    });
+
+    app.get("/api/wondertoad/handoff/:token", async (req, res) => {
+      const base = wondertoadBase();
+      const token = req.params.token || "";
+      if (!base) {
+        res.status(503).json({ error: "Wondertoad URL is not configured" });
+        return;
+      }
+      if (!validHandoffToken(token)) {
+        res.status(400).json({ error: "Invalid handoff token" });
+        return;
+      }
+      try {
+        const upstream = await fetch(`${base}/api/handoff/${encodeURIComponent(token)}`, {
+          headers: { accept: "application/json" },
+        });
+        const text = await upstream.text();
+        if (!upstream.ok) {
+          res.status(upstream.status).type(upstream.headers.get("content-type") || "application/json").send(text);
+          return;
+        }
+        const data = JSON.parse(text);
+        const candidates = Array.isArray(data.candidates)
+          ? data.candidates.map((candidate: any) => ({
+              ...candidate,
+              streamUrl: `/api/wondertoad/handoff/${encodeURIComponent(token)}/file/${encodeURIComponent(candidate.id)}`,
+            }))
+          : [];
+        res.json({ ...data, candidates });
+      } catch (error) {
+        res.status(502).json({ error: error instanceof Error ? error.message : String(error) });
+      }
+    });
+
+    app.get("/api/wondertoad/handoff/:token/file/:sampleKey", async (req, res) => {
+      const base = wondertoadBase();
+      const token = req.params.token || "";
+      const sampleKey = req.params.sampleKey || "";
+      if (!base) {
+        res.status(503).json({ error: "Wondertoad URL is not configured" });
+        return;
+      }
+      if (!validHandoffToken(token) || !validSampleKey(sampleKey)) {
+        res.status(400).json({ error: "Invalid Wondertoad handoff request" });
+        return;
+      }
+      try {
+        const headers: Record<string, string> = {};
+        if (req.headers.range) headers.range = req.headers.range;
+        const upstream = await fetch(
+          `${base}/api/handoff/${encodeURIComponent(token)}/file/${encodeURIComponent(sampleKey)}`,
+          { headers },
+        );
+        const passHeaders = [
+          "content-type",
+          "content-length",
+          "content-range",
+          "accept-ranges",
+          "etag",
+          "last-modified",
+        ];
+        for (const name of passHeaders) {
+          const value = upstream.headers.get(name);
+          if (value) res.setHeader(name, value);
+        }
+        res.setHeader("cache-control", "private, no-store");
+        res.status(upstream.status);
+        if (!upstream.body) {
+          res.end();
+          return;
+        }
+        Readable.fromWeb(upstream.body as any).pipe(res);
+      } catch (error) {
+        if (!res.headersSent) {
+          res.status(502).json({ error: error instanceof Error ? error.message : String(error) });
+        } else {
+          res.end();
+        }
+      }
     });
 
     app.use(
@@ -93,8 +206,8 @@ async function startServer() {
     // Serve manifest, service worker, and mixer from public
     app.use(express.static(path.join(process.cwd(), "public")));
 
-    // Serve mixer.html at root
-    app.get("/", (req, res) => {
+    // Serve the functional Mini AUM web studio at root.
+    app.get("/", (_req, res) => {
       const filePath = path.join(process.cwd(), "public/mixer.html");
       res.sendFile(filePath, (err) => {
         if (err) {

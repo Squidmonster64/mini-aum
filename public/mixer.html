@@ -1,196 +1,345 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mini AUM - Audio Mixer</title>
-    <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#0a7ea4">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: #151718;
-            color: #ECEDEE;
-            padding: 16px;
-            min-height: 100vh;
-        }
-        .container { max-width: 100%; overflow-x: auto; }
-        h1 { font-size: 24px; margin-bottom: 20px; text-align: center; }
-        .mixer { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 20px; }
-        .channel {
-            flex-shrink: 0;
-            width: 60px;
-            background: #1e2022;
-            border: 1px solid #334155;
-            border-radius: 8px;
-            padding: 12px 8px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .channel.drums { border-left: 3px solid #EF4444; }
-        .channel.bass { border-left: 3px solid #F59E0B; }
-        .channel.guitar { border-left: 3px solid #22C55E; }
-        .channel.vocals { border-left: 3px solid #3B82F6; }
-        .channel.keys { border-left: 3px solid #A855F7; }
-        .channel.strings { border-left: 3px solid #EC4899; }
-        .channel-name { font-size: 12px; font-weight: 600; text-align: center; }
-        .fader-container { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; }
-        input[type="range"] { width: 100%; height: 120px; writing-mode: bt-lr; appearance: slider-vertical; }
-        .controls { display: flex; gap: 4px; }
-        button {
-            flex: 1;
-            padding: 6px;
-            background: #0a7ea4;
-            border: none;
-            border-radius: 4px;
-            color: white;
-            font-size: 11px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        button:active { opacity: 0.8; }
-        button.active { background: #22C55E; }
-        .master { margin-top: 20px; background: #1e2022; border: 2px solid #0a7ea4; border-radius: 8px; padding: 16px; }
-        .master-label { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
-        .master-controls { display: flex; gap: 12px; }
-        .master-fader { flex: 1; }
-        .master-buttons { display: flex; gap: 8px; }
-        .master-buttons button { flex: 1; padding: 12px; }
-        .vu-meter { 
-            width: 100%;
-            height: 4px;
-            background: #334155;
-            border-radius: 2px;
-            margin-top: 4px;
-            overflow: hidden;
-        }
-        .vu-bar { height: 100%; background: #22C55E; width: 75%; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#090b0e">
+  <title>Mini AUM — Studio</title>
+  <link rel="manifest" href="/manifest.json">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg:#090b0e; --panel:#12161d; --panel2:#181e27; --line:#2c3440;
+      --text:#f1f4f7; --muted:#8f9baa; --lime:#b7f34a; --cyan:#55c3f4;
+      --amber:#f7ad37; --red:#ef5660; --radius:16px;
+    }
+    * { box-sizing:border-box; }
+    html,body { margin:0; min-height:100%; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif; }
+    body { padding:calc(14px + env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) calc(18px + env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left)); }
+    button,input { font:inherit; }
+    button { color:var(--text); background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:10px 13px; font-size:12px; font-weight:750; cursor:pointer; }
+    button:hover { border-color:#46515f; }
+    button:active { transform:translateY(1px); }
+    button.primary { background:var(--lime); color:#0a0d0f; border-color:var(--lime); }
+    button.cyan { background:var(--cyan); color:#091015; border-color:var(--cyan); }
+    button.danger { color:#ff9da4; }
+    button.active { border-color:var(--lime); color:var(--lime); }
+    button:disabled { opacity:.45; cursor:not-allowed; transform:none; }
+    .app { max-width:1500px; margin:0 auto; }
+    .topbar { display:flex; align-items:center; gap:12px; padding:4px 0 16px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+    .brand { margin-right:auto; min-width:190px; }
+    .brand h1 { margin:0; font-size:25px; line-height:1; letter-spacing:-.5px; }
+    .eyebrow { margin-top:7px; color:var(--muted); font-size:10px; font-weight:800; letter-spacing:1.2px; }
+    .status { display:inline-flex; align-items:center; gap:7px; color:var(--muted); font-size:11px; }
+    .dot { width:8px; height:8px; border-radius:50%; background:#535d69; }
+    .dot.ok { background:var(--lime); box-shadow:0 0 0 3px rgba(183,243,74,.1); }
+    .transport { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .tempo { display:flex; align-items:center; gap:7px; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:5px 9px; }
+    .tempo label { color:var(--muted); font-size:10px; font-weight:800; }
+    .tempo input { width:62px; color:var(--text); background:transparent; border:0; outline:0; font-weight:800; font-size:15px; }
+    .section-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:22px 0 10px; }
+    .section-head h2 { margin:0; font-size:11px; color:var(--muted); letter-spacing:1.1px; }
+    .section-head .hint { color:var(--muted); font-size:11px; }
+    .channels { display:grid; grid-template-columns:repeat(4,minmax(230px,1fr)); gap:12px; }
+    .channel { min-width:0; border:1px solid var(--line); background:var(--panel); border-radius:var(--radius); padding:14px; position:relative; }
+    .channel.selected { border-color:var(--cyan); box-shadow:0 0 0 1px rgba(85,195,244,.2); }
+    .channel-top { display:flex; align-items:flex-start; gap:10px; }
+    .channel-id { color:var(--muted); font-size:10px; font-weight:800; letter-spacing:1px; }
+    .channel-name { font-size:17px; font-weight:800; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .source { margin:13px 0 10px; padding:11px; background:var(--panel2); border-radius:11px; min-height:72px; }
+    .source-label { color:var(--muted); font-size:9px; font-weight:850; letter-spacing:1px; }
+    .source-name { margin-top:5px; color:var(--cyan); font-size:13px; font-weight:760; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .source-name.empty { color:var(--amber); }
+    .source-meta { margin-top:5px; color:var(--muted); font-size:10px; line-height:1.35; min-height:14px; }
+    .load-row { display:flex; gap:7px; margin-bottom:13px; }
+    .load-row button { flex:1; padding:8px 7px; }
+    .control { margin-top:12px; }
+    .control-head { display:flex; justify-content:space-between; color:var(--muted); font-size:10px; font-weight:700; margin-bottom:6px; }
+    input[type="range"] { appearance:none; -webkit-appearance:none; width:100%; height:24px; background:transparent; margin:0; }
+    input[type="range"]::-webkit-slider-runnable-track { height:6px; border-radius:99px; background:linear-gradient(90deg,var(--lime) 0 50%,var(--line) 50% 100%); }
+    input.pan::-webkit-slider-runnable-track { background:linear-gradient(90deg,var(--line),var(--cyan),var(--line)); }
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:#fff; border:2px solid #d8dee6; margin-top:-6px; box-shadow:0 1px 4px rgba(0,0,0,.45); }
+    input[type="range"]::-moz-range-track { height:6px; border-radius:99px; background:var(--line); }
+    input[type="range"]::-moz-range-thumb { width:16px; height:16px; border-radius:50%; background:#fff; border:2px solid #d8dee6; }
+    .buttons { display:grid; grid-template-columns:repeat(4,1fr); gap:7px; margin-top:12px; }
+    .buttons button { padding:8px 5px; }
+    .master { margin-top:12px; border:1px solid var(--line); background:var(--panel); border-radius:var(--radius); padding:13px; display:grid; grid-template-columns:1fr auto; gap:16px; align-items:end; }
+    .master .control { margin:0; }
+    .audition { display:none; margin-top:18px; border:1px solid rgba(183,243,74,.4); background:linear-gradient(180deg,rgba(183,243,74,.06),var(--panel)); border-radius:var(--radius); padding:15px; }
+    .audition.visible { display:block; }
+    .audition-grid { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:14px; align-items:center; }
+    .audition h3 { margin:4px 0; font-size:18px; }
+    .meta { color:var(--muted); font-size:11px; }
+    .audition-actions { display:flex; gap:7px; flex-wrap:wrap; }
+    .midi-shell { margin-top:18px; border:1px solid var(--line); background:var(--panel); border-radius:var(--radius); overflow:hidden; }
+    .midi-head { display:flex; align-items:center; gap:12px; padding:14px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+    .midi-head .title { font-size:16px; font-weight:800; margin-right:auto; }
+    .midi-empty { padding:38px 18px; color:var(--muted); text-align:center; }
+    .midi-body { display:none; grid-template-columns:minmax(0,1fr) 240px; min-height:340px; }
+    .midi-body.visible { display:grid; }
+    .roll-wrap { overflow:auto; padding:12px; }
+    .roll { position:relative; width:960px; height:300px; border-radius:10px; overflow:hidden; background-color:#0b0e13; background-image:linear-gradient(to right,rgba(143,155,170,.18) 1px,transparent 1px),linear-gradient(to bottom,rgba(143,155,170,.12) 1px,transparent 1px); background-size:60px 100%,100% 25px; border:1px solid #222a34; }
+    .note { position:absolute; min-width:8px; height:18px; border-radius:4px; background:var(--cyan); border:1px solid rgba(255,255,255,.18); cursor:pointer; }
+    .note:nth-child(3n) { background:var(--lime); }
+    .note.selected { outline:2px solid #fff; z-index:2; }
+    .inspector { border-left:1px solid var(--line); padding:14px; background:var(--panel2); }
+    .inspector h3 { margin:0 0 4px; font-size:11px; color:var(--muted); letter-spacing:1px; }
+    .note-name { font-size:30px; font-weight:850; margin:8px 0; }
+    .kv { display:grid; grid-template-columns:1fr auto; gap:7px; font-size:11px; margin:12px 0; }
+    .kv span:nth-child(odd) { color:var(--muted); }
+    .edit-row { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:10px; }
+    .edit-row button { padding:8px 4px; }
+    .foot { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; color:var(--muted); font-size:10px; padding:16px 2px 2px; }
+    .toast { position:fixed; left:50%; bottom:calc(20px + env(safe-area-inset-bottom)); transform:translateX(-50%); background:#202630; border:1px solid #394453; padding:10px 14px; border-radius:12px; color:var(--text); font-size:12px; z-index:20; max-width:min(90vw,560px); box-shadow:0 8px 30px rgba(0,0,0,.4); }
+    .hidden { display:none !important; }
+    @media(max-width:1100px){ .channels{grid-template-columns:repeat(2,minmax(240px,1fr));} }
+    @media(max-width:720px){
+      body{padding-left:12px;padding-right:12px}.topbar{align-items:flex-start}.brand{width:100%}.transport{width:100%}.transport button{flex:1}.tempo{flex:1;justify-content:space-between}.channels{grid-template-columns:1fr}.channel{padding:13px}.master{grid-template-columns:1fr}.audition-grid{grid-template-columns:1fr}.audition-actions button{flex:1}.midi-body.visible{grid-template-columns:1fr}.inspector{border-left:0;border-top:1px solid var(--line)}.section-head .hint{display:none}.foot{display:block;line-height:1.6}
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🎵 Mini AUM</h1>
-        
-        <div class="mixer">
-            <div class="channel drums">
-                <div class="channel-name">Drums</div>
-                <div class="fader-container">
-                    <input type="range" min="0" max="100" value="75" class="volume">
-                </div>
-                <div class="vu-meter"><div class="vu-bar" style="width: 75%;"></div></div>
-                <div class="controls">
-                    <button class="mute">M</button>
-                    <button class="solo">S</button>
-                </div>
-            </div>
-
-            <div class="channel bass">
-                <div class="channel-name">Bass</div>
-                <div class="fader-container">
-                    <input type="range" min="0" max="100" value="70" class="volume">
-                </div>
-                <div class="vu-meter"><div class="vu-bar" style="width: 70%;"></div></div>
-                <div class="controls">
-                    <button class="mute">M</button>
-                    <button class="solo">S</button>
-                </div>
-            </div>
-
-            <div class="channel guitar">
-                <div class="channel-name">Guitar</div>
-                <div class="fader-container">
-                    <input type="range" min="0" max="100" value="60" class="volume">
-                </div>
-                <div class="vu-meter"><div class="vu-bar" style="width: 60%;"></div></div>
-                <div class="controls">
-                    <button class="mute">M</button>
-                    <button class="solo">S</button>
-                </div>
-            </div>
-
-            <div class="channel vocals">
-                <div class="channel-name">Vocals</div>
-                <div class="fader-container">
-                    <input type="range" min="0" max="100" value="80" class="volume">
-                </div>
-                <div class="vu-meter"><div class="vu-bar" style="width: 80%;"></div></div>
-                <div class="controls">
-                    <button class="mute">M</button>
-                    <button class="solo">S</button>
-                </div>
-            </div>
-
-            <div class="channel keys">
-                <div class="channel-name">Keys</div>
-                <div class="fader-container">
-                    <input type="range" min="0" max="100" value="65" class="volume">
-                </div>
-                <div class="vu-meter"><div class="vu-bar" style="width: 65%;"></div></div>
-                <div class="controls">
-                    <button class="mute">M</button>
-                    <button class="solo">S</button>
-                </div>
-            </div>
-
-            <div class="channel strings">
-                <div class="channel-name">Strings</div>
-                <div class="fader-container">
-                    <input type="range" min="0" max="100" value="55" class="volume">
-                </div>
-                <div class="vu-meter"><div class="vu-bar" style="width: 55%;"></div></div>
-                <div class="controls">
-                    <button class="mute">M</button>
-                    <button class="solo">S</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="master">
-            <div class="master-label">Master</div>
-            <div class="master-controls">
-                <div class="master-fader">
-                    <input type="range" min="0" max="100" value="80" class="volume" style="width: 100%; height: 30px;">
-                    <div class="vu-meter"><div class="vu-bar" style="width: 80%;"></div></div>
-                </div>
-            </div>
-            <div class="master-buttons" style="margin-top: 12px;">
-                <button id="play">▶ Play</button>
-                <button id="stop">⏹ Stop</button>
-            </div>
-        </div>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <h1>Mini AUM</h1>
+      <div class="eyebrow">REAL AUDIO · WONDERTOAD · MIDI</div>
     </div>
+    <div class="status"><span id="wtDot" class="dot"></span><span id="wtStatus">Checking Wondertoad…</span></div>
+    <div class="transport">
+      <div class="tempo"><label for="tempo">TEMPO</label><input id="tempo" type="number" min="40" max="240" value="124"><span class="meta">BPM</span></div>
+      <button id="openWondertoad">OPEN WONDERTOAD</button>
+      <button id="topAudio">+ AUDIO</button>
+      <button id="topMidi">+ MIDI</button>
+      <button id="play" class="primary">▶ PLAY</button>
+      <button id="stop">■ STOP</button>
+    </div>
+  </header>
 
-    <script>
-        // Register service worker
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/service-worker.js').catch(() => {});
-        }
+  <section>
+    <div class="section-head"><h2>CHANNELS</h2><div class="hint">Select a channel, then load audio or MIDI. No demo sound is hidden behind the strips.</div></div>
+    <div id="channels" class="channels"></div>
+    <div class="master">
+      <div class="control"><div class="control-head"><span>MASTER VOLUME</span><span id="masterValue">−3.0 dB</span></div><input id="master" type="range" min="-36" max="6" step="0.5" value="-3"></div>
+      <button id="addChannel">+ CHANNEL</button>
+    </div>
+  </section>
 
-        // Fader interactions
-        document.querySelectorAll('input[type="range"]').forEach(fader => {
-            fader.addEventListener('input', (e) => {
-                const value = e.target.value;
-                const meter = e.target.closest('.channel, .master-fader').querySelector('.vu-bar');
-                if (meter) meter.style.width = value + '%';
-            });
-        });
+  <section id="audition" class="audition">
+    <div class="audition-grid">
+      <div><div class="eyebrow" style="color:var(--lime)">WONDERTOAD AUDITION</div><h3 id="auditionName">—</h3><div id="auditionMeta" class="meta"></div></div>
+      <div class="audition-actions"><button id="prevCandidate">← PREV</button><button id="auditionPlay" class="primary">▶ AUDITION</button><button id="nextCandidate">NEXT →</button><button id="keepCandidate" class="cyan">KEEP IN CHANNEL</button></div>
+    </div>
+  </section>
 
-        // Mute/Solo buttons
-        document.querySelectorAll('.mute, .solo').forEach(btn => {
-            btn.addEventListener('click', () => {
-                btn.classList.toggle('active');
-            });
-        });
+  <section class="midi-shell">
+    <div class="midi-head"><div><div class="eyebrow" style="color:var(--cyan)">MIDI EDITOR</div><div id="midiTitle" class="title">No MIDI loaded</div></div><button id="importMidi">IMPORT MIDI</button><button id="addNote" disabled>+ NOTE</button></div>
+    <div id="midiEmpty" class="midi-empty">Import a .mid file to create playable MIDI channels and see the actual notes. Double-click the piano roll to add a note.</div>
+    <div id="midiBody" class="midi-body">
+      <div class="roll-wrap"><div id="roll" class="roll" title="Double-click to add a note"></div></div>
+      <aside class="inspector">
+        <h3>SELECTED NOTE</h3><div id="noteName" class="note-name">—</div>
+        <div class="kv"><span>Start</span><span id="noteStart">—</span><span>Length</span><span id="noteLength">—</span><span>Velocity</span><span id="noteVelocity">—</span></div>
+        <div class="edit-row"><button data-transpose="-12">−12</button><button data-transpose="-1">−1</button><button data-transpose="1">+1</button><button data-transpose="12">+12</button></div>
+        <div class="control"><div class="control-head"><span>VELOCITY</span><span id="velocityValue">—</span></div><input id="velocity" type="range" min="1" max="127" value="100" disabled></div>
+        <button id="deleteNote" class="danger" style="width:100%;margin-top:10px" disabled>DELETE NOTE</button>
+      </aside>
+    </div>
+  </section>
 
-        // Play/Stop
-        document.getElementById('play').addEventListener('click', () => {
-            alert('▶ Playback started!');
-        });
-        document.getElementById('stop').addEventListener('click', () => {
-            alert('⏹ Playback stopped!');
-        });
-    </script>
+  <div class="foot"><span>Audio engine: Tone.js 15.1.22 (MIT). MIDI parser: @tonejs/midi 2.0.28 (MIT).</span><span id="engineStatus">Audio engine idle</span></div>
+</div>
+<input id="audioPicker" type="file" accept="audio/*,.wav,.wave,.aif,.aiff,.flac,.mp3,.m4a,.aac,.ogg" hidden>
+<input id="midiPicker" type="file" accept=".mid,.midi,audio/midi,audio/x-midi" hidden>
+<div id="toast" class="toast hidden"></div>
+
+<script type="module">
+  import * as Tone from 'https://cdn.jsdelivr.net/npm/tone@15.1.22/+esm';
+  import { Midi } from 'https://cdn.jsdelivr.net/npm/@tonejs/midi@2.0.28/+esm';
+
+  const WONDERTOAD = 'https://wondertoad-sample-crate.davidhopejohnstone.workers.dev';
+  const colors = ['#55c3f4','#b7f34a','#f7ad37','#d080ff','#ff7aa9','#6fe1c1','#ff8c61','#87a7ff'];
+  const channels = [];
+  let selectedChannelId = null;
+  let pendingAudioTarget = null;
+  let midiChannelId = null;
+  let selectedNoteIndex = null;
+  let handoff = null;
+  let handoffIndex = 0;
+  let auditionPlayer = null;
+  let playing = false;
+  const transport = Tone.getTransport();
+
+  const $ = (id) => document.getElementById(id);
+  const dbText = (n) => Number(n) <= -59.5 ? '−∞ dB' : `${Number(n) >= 0 ? '+' : '−'}${Math.abs(Number(n)).toFixed(1)} dB`;
+  const panText = (n) => Math.abs(Number(n)) < .04 ? 'C' : Number(n) < 0 ? `L ${Math.round(Math.abs(Number(n))*100)}` : `R ${Math.round(Number(n)*100)}`;
+  const safe = (s='') => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.remove('hidden'); clearTimeout(t._timer); t._timer=setTimeout(()=>t.classList.add('hidden'),2600); }
+  function setEngineStatus(msg){ $('engineStatus').textContent=msg; }
+
+  function makeToneChannel(volume=-6, pan=0){
+    return new Tone.Channel({ volume, pan, mute:false, solo:false }).toDestination();
+  }
+
+  function newChannel(name){
+    const id = `ch-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
+    const ch = { id, name:name || `Channel ${channels.length+1}`, sourceType:'empty', sourceName:'EMPTY', meta:'Load a file or keep a Wondertoad sample', volume:-6, pan:0, muted:false, solo:false, loop:true, color:colors[channels.length%colors.length], node:makeToneChannel(-6,0), player:null, synth:null, part:null, objectUrl:null, midiNotes:null, midiDuration:0, midiTrackName:null };
+    channels.push(ch); if(!selectedChannelId) selectedChannelId=id; return ch;
+  }
+
+  function disposeSource(ch){
+    try { ch.player?.unsync?.(); ch.player?.stop?.(); ch.player?.dispose?.(); } catch {}
+    try { ch.part?.dispose?.(); ch.synth?.dispose?.(); } catch {}
+    if(ch.objectUrl) URL.revokeObjectURL(ch.objectUrl);
+    ch.player=null; ch.part=null; ch.synth=null; ch.objectUrl=null; ch.midiNotes=null; ch.midiDuration=0; ch.midiTrackName=null;
+  }
+
+  function sourceMeta(ch){
+    if(ch.sourceType==='empty') return 'Load a file or keep a Wondertoad sample';
+    if(ch.sourceType==='midi') return `${ch.midiNotes?.length||0} notes · ${ch.midiDuration.toFixed(1)} sec`;
+    return ch.meta || (ch.sourceType==='wondertoad' ? 'Wondertoad sample' : 'Local audio file');
+  }
+
+  function renderChannels(){
+    const host=$('channels'); host.innerHTML='';
+    channels.forEach((ch,index)=>{
+      const card=document.createElement('article'); card.className=`channel${ch.id===selectedChannelId?' selected':''}`; card.style.borderTopColor=ch.color;
+      card.innerHTML=`
+        <div class="channel-top"><div><div class="channel-id">CH ${index+1}</div><div class="channel-name">${safe(ch.name)}</div></div></div>
+        <div class="source"><div class="source-label">SOURCE</div><div class="source-name ${ch.sourceType==='empty'?'empty':''}">${safe(ch.sourceName)}</div><div class="source-meta">${safe(sourceMeta(ch))}</div></div>
+        <div class="load-row"><button data-action="audio">${ch.sourceType==='empty'?'LOAD AUDIO':'REPLACE AUDIO'}</button><button data-action="midi">LOAD MIDI</button></div>
+        <div class="control"><div class="control-head"><span>VOLUME</span><span>${dbText(ch.volume)}</span></div><input data-control="volume" type="range" min="-60" max="6" step="0.5" value="${ch.volume}"></div>
+        <div class="control"><div class="control-head"><span>PAN</span><span>${panText(ch.pan)}</span></div><input class="pan" data-control="pan" type="range" min="-1" max="1" step="0.01" value="${ch.pan}"></div>
+        <div class="buttons"><button data-action="mute" class="${ch.muted?'active':''}">MUTE</button><button data-action="solo" class="${ch.solo?'active':''}">SOLO</button><button data-action="loop" class="${ch.loop?'active':''}">LOOP</button><button data-action="remove" class="danger">REMOVE</button></div>`;
+      card.addEventListener('click',(e)=>{
+        selectedChannelId=ch.id;
+        const action=e.target.closest('button')?.dataset.action;
+        if(action){ e.stopPropagation(); handleChannelAction(ch,action); }
+        else renderChannels();
+      });
+      card.querySelector('[data-control="volume"]').addEventListener('input',(e)=>{ ch.volume=Number(e.target.value); ch.node.volume.value=ch.volume; renderChannels(); });
+      card.querySelector('[data-control="pan"]').addEventListener('input',(e)=>{ ch.pan=Number(e.target.value); ch.node.pan.value=ch.pan; renderChannels(); });
+      host.appendChild(card);
+    });
+  }
+
+  function handleChannelAction(ch,action){
+    selectedChannelId=ch.id;
+    if(action==='audio'){ pendingAudioTarget=ch.id; $('audioPicker').value=''; $('audioPicker').click(); return; }
+    if(action==='midi'){ midiChannelId=ch.id; $('midiPicker').value=''; $('midiPicker').click(); return; }
+    if(action==='mute'){ ch.muted=!ch.muted; ch.node.mute=ch.muted; }
+    if(action==='solo'){ ch.solo=!ch.solo; ch.node.solo=ch.solo; }
+    if(action==='loop'){ ch.loop=!ch.loop; if(ch.player) ch.player.loop=ch.loop; }
+    if(action==='remove'){
+      if(channels.length===1){ disposeSource(ch); ch.sourceType='empty'; ch.sourceName='EMPTY'; ch.meta=''; ch.name='Channel 1'; }
+      else { disposeSource(ch); ch.node.dispose(); channels.splice(channels.indexOf(ch),1); if(selectedChannelId===ch.id) selectedChannelId=channels[0]?.id||null; }
+      if(midiChannelId===ch.id){ midiChannelId=null; selectedNoteIndex=null; renderMidi(); }
+    }
+    renderChannels();
+  }
+
+  async function loadAudio(ch,url,name,{type='audio',meta='',objectUrl=null}={}){
+    stopAll(); disposeSource(ch); setEngineStatus(`Loading ${name}…`);
+    const player=new Tone.Player().connect(ch.node);
+    await player.load(url);
+    player.loop=ch.loop;
+    player.sync().start(0);
+    ch.player=player; ch.objectUrl=objectUrl; ch.sourceType=type; ch.sourceName=name; ch.meta=meta; ch.name = ch.name.startsWith('Channel ') ? name.replace(/\.[^.]+$/,'').slice(0,24) : ch.name;
+    renderChannels(); setEngineStatus(`${name} ready`);
+  }
+
+  function rebuildMidiPart(ch){
+    try { ch.part?.dispose?.(); ch.synth?.dispose?.(); } catch {}
+    ch.synth=new Tone.PolySynth(Tone.Synth,{ oscillator:{type:'triangle'}, envelope:{attack:0.01,decay:0.12,sustain:0.35,release:0.5} }).connect(ch.node);
+    const events=(ch.midiNotes||[]).map(n=>[Math.max(0,n.time),n]);
+    ch.part=new Tone.Part((time,n)=>{ const note=Tone.Frequency(n.midi,'midi').toNote(); ch.synth.triggerAttackRelease(note,Math.max(.03,n.duration),time,n.velocity); },events);
+    ch.part.start(0);
+    ch.midiDuration=(ch.midiNotes||[]).reduce((m,n)=>Math.max(m,n.time+n.duration),0);
+  }
+
+  function loadMidiTrackIntoChannel(ch,track,fileName,index){
+    stopAll(); disposeSource(ch);
+    ch.sourceType='midi'; ch.sourceName=fileName; ch.midiTrackName=track.name || `Track ${index+1}`;
+    ch.name=ch.midiTrackName.slice(0,24);
+    ch.midiNotes=track.notes.map(n=>({midi:n.midi,time:n.time,duration:n.duration,velocity:n.velocity,name:n.name}));
+    ch.meta=`MIDI · ${ch.midiTrackName}`;
+    rebuildMidiPart(ch);
+    midiChannelId=ch.id; selectedNoteIndex=ch.midiNotes.length?0:null;
+  }
+
+  async function importMidiFile(file,targetId=null){
+    const data=await file.arrayBuffer(); const midi=new Midi(data); const tracks=midi.tracks.filter(t=>t.notes.length);
+    if(!tracks.length) throw new Error('This MIDI file contains no note tracks');
+    $('tempo').value=Math.round(midi.header.tempos?.[0]?.bpm || Number($('tempo').value)||124); updateTempo();
+    tracks.slice(0,12).forEach((track,i)=>{
+      let ch;
+      if(i===0 && targetId) ch=channels.find(x=>x.id===targetId);
+      if(!ch) ch=channels.find(x=>x.sourceType==='empty' && !tracks.slice(0,i).some(()=>false));
+      if(!ch || (i>0 && ch.sourceType!=='empty')) ch=newChannel(track.name||`MIDI ${i+1}`);
+      loadMidiTrackIntoChannel(ch,track,file.name,i);
+    });
+    renderChannels(); renderMidi(); toast(`Loaded ${tracks.length} MIDI track${tracks.length===1?'':'s'}`);
+  }
+
+  async function playAll(){
+    try { await Tone.start(); transport.stop(); transport.position=0; transport.bpm.value=Number($('tempo').value)||124; transport.start('+0.05'); playing=true; $('play').textContent='❚❚ PAUSE'; setEngineStatus('Transport playing'); }
+    catch(e){ toast(`Audio could not start: ${e.message}`); }
+  }
+  function pauseAll(){ transport.pause(); playing=false; $('play').textContent='▶ PLAY'; setEngineStatus('Transport paused'); }
+  function stopAll(){ try{transport.stop();transport.position=0;}catch{} playing=false; $('play').textContent='▶ PLAY'; setEngineStatus('Transport stopped'); }
+  function updateTempo(){ const bpm=Math.max(40,Math.min(240,Number($('tempo').value)||124)); $('tempo').value=bpm; transport.bpm.rampTo(bpm,.05); }
+
+  function midiChannel(){ return channels.find(c=>c.id===midiChannelId && c.sourceType==='midi') || channels.find(c=>c.sourceType==='midi') || null; }
+  function renderMidi(){
+    const ch=midiChannel(); if(ch) midiChannelId=ch.id;
+    $('midiEmpty').classList.toggle('hidden',!!ch); $('midiBody').classList.toggle('visible',!!ch); $('addNote').disabled=!ch;
+    if(!ch){ $('midiTitle').textContent='No MIDI loaded'; $('roll').innerHTML=''; clearInspector(); return; }
+    $('midiTitle').textContent=`${ch.sourceName} · ${ch.midiTrackName || ch.name}`;
+    const notes=ch.midiNotes||[]; const roll=$('roll'); roll.innerHTML='';
+    const duration=Math.max(4,ch.midiDuration||4); const pitches=notes.map(n=>n.midi); const min=Math.max(24,Math.min(...pitches,60)-3); const max=Math.min(108,Math.max(...pitches,72)+3); const span=Math.max(12,max-min+1);
+    notes.forEach((n,i)=>{ const el=document.createElement('div'); el.className=`note${i===selectedNoteIndex?' selected':''}`; el.style.left=`${Math.min(99,(n.time/duration)*100)}%`; el.style.width=`${Math.max(.8,(n.duration/duration)*100)}%`; el.style.top=`${((max-n.midi)/span)*100}%`; el.title=`${Tone.Frequency(n.midi,'midi').toNote()} · ${n.time.toFixed(2)}s`; el.addEventListener('click',(e)=>{e.stopPropagation();selectedNoteIndex=i;renderMidi();}); roll.appendChild(el); });
+    roll.dataset.min=String(min); roll.dataset.max=String(max); roll.dataset.duration=String(duration); renderInspector(ch);
+  }
+  function clearInspector(){ $('noteName').textContent='—'; $('noteStart').textContent='—'; $('noteLength').textContent='—'; $('noteVelocity').textContent='—'; $('velocityValue').textContent='—'; $('velocity').disabled=true; $('deleteNote').disabled=true; }
+  function renderInspector(ch){ const n=ch.midiNotes?.[selectedNoteIndex]; if(!n){clearInspector();return;} const name=Tone.Frequency(n.midi,'midi').toNote(); $('noteName').textContent=name; $('noteStart').textContent=`${n.time.toFixed(2)} s`; $('noteLength').textContent=`${n.duration.toFixed(2)} s`; $('noteVelocity').textContent=String(Math.round(n.velocity*127)); $('velocity').value=String(Math.round(n.velocity*127)); $('velocityValue').textContent=String(Math.round(n.velocity*127)); $('velocity').disabled=false; $('deleteNote').disabled=false; }
+  function editSelected(fn){ const ch=midiChannel(); const n=ch?.midiNotes?.[selectedNoteIndex]; if(!ch||!n)return; fn(n); rebuildMidiPart(ch); renderMidi(); renderChannels(); }
+
+  async function loadHandoff(token){
+    $('audition').classList.add('visible'); $('auditionName').textContent='Loading Wondertoad handoff…';
+    try { const res=await fetch(`/api/wondertoad/handoff/${encodeURIComponent(token)}`); const data=await res.json(); if(!res.ok) throw new Error(data.error||`Handoff ${res.status}`); handoff=data; handoffIndex=Math.max(0,Math.min(data.candidates.length-1,data.activeIndex||0)); if(data.context?.bpm){$('tempo').value=Math.round(data.context.bpm);updateTempo();} renderAudition(); }
+    catch(e){ $('auditionName').textContent='Could not open Wondertoad sample'; $('auditionMeta').textContent=e.message; $('auditionPlay').disabled=true; $('keepCandidate').disabled=true; }
+  }
+  function candidate(){ return handoff?.candidates?.[handoffIndex] || null; }
+  function renderAudition(){ const c=candidate(); if(!c)return; $('auditionName').textContent=c.name; $('auditionMeta').textContent=[c.bpm?`${Math.round(c.bpm)} BPM`:null,c.key,c.instrument||c.sampleType,c.genre,`${handoffIndex+1} of ${handoff.candidates.length}`].filter(Boolean).join(' · '); $('auditionPlay').disabled=false; $('keepCandidate').disabled=false; }
+  async function audition(){ const c=candidate(); if(!c)return; try{await Tone.start(); if(auditionPlayer){auditionPlayer.stop();auditionPlayer.dispose();auditionPlayer=null;} auditionPlayer=new Tone.Player().toDestination(); await auditionPlayer.load(c.streamUrl); auditionPlayer.start(); $('auditionPlay').textContent='■ STOP AUDITION'; auditionPlayer.onstop=()=>{$('auditionPlay').textContent='▶ AUDITION';}; }catch(e){toast(`Audition failed: ${e.message}`);} }
+  async function keepCandidate(){ const c=candidate(); if(!c)return; let ch=channels.find(x=>x.id===selectedChannelId); if(!ch) ch=channels.find(x=>x.sourceType==='empty'); if(!ch) ch=newChannel('Wondertoad'); try{ await loadAudio(ch,c.streamUrl,c.name,{type:'wondertoad',meta:[c.bpm?`${Math.round(c.bpm)} BPM`:null,c.key,c.instrument||c.sampleType,c.genre].filter(Boolean).join(' · ')}); selectedChannelId=ch.id; renderChannels(); toast(`Kept ${c.name} in ${ch.name}`); }catch(e){toast(`Could not keep sample: ${e.message}`);} }
+
+  $('play').addEventListener('click',()=> playing ? pauseAll() : playAll());
+  $('stop').addEventListener('click',stopAll);
+  $('tempo').addEventListener('change',updateTempo);
+  $('master').addEventListener('input',(e)=>{ const v=Number(e.target.value); Tone.getDestination().volume.value=v; $('masterValue').textContent=dbText(v); });
+  $('addChannel').addEventListener('click',()=>{ const ch=newChannel(); selectedChannelId=ch.id; renderChannels(); });
+  $('openWondertoad').addEventListener('click',()=>window.open(WONDERTOAD,'_blank','noopener'));
+  $('topAudio').addEventListener('click',()=>{ pendingAudioTarget=selectedChannelId; $('audioPicker').value=''; $('audioPicker').click(); });
+  $('topMidi').addEventListener('click',()=>{ midiChannelId=null; $('midiPicker').value=''; $('midiPicker').click(); });
+  $('importMidi').addEventListener('click',()=>{ midiChannelId=null; $('midiPicker').value=''; $('midiPicker').click(); });
+  $('audioPicker').addEventListener('change',async(e)=>{ const file=e.target.files?.[0]; if(!file)return; let ch=channels.find(x=>x.id===pendingAudioTarget); if(!ch) ch=channels.find(x=>x.sourceType==='empty') || newChannel(); const url=URL.createObjectURL(file); try{await loadAudio(ch,url,file.name,{type:'file',meta:`Local file · ${(file.size/1048576).toFixed(1)} MB`,objectUrl:url});selectedChannelId=ch.id;}catch(err){URL.revokeObjectURL(url);toast(err.message);} pendingAudioTarget=null;renderChannels();});
+  $('midiPicker').addEventListener('change',async(e)=>{ const file=e.target.files?.[0]; if(!file)return; try{await importMidiFile(file,midiChannelId);}catch(err){toast(err.message);} });
+  $('prevCandidate').addEventListener('click',()=>{if(!handoff)return;handoffIndex=(handoffIndex-1+handoff.candidates.length)%handoff.candidates.length;renderAudition();});
+  $('nextCandidate').addEventListener('click',()=>{if(!handoff)return;handoffIndex=(handoffIndex+1)%handoff.candidates.length;renderAudition();});
+  $('auditionPlay').addEventListener('click',()=>{ if(auditionPlayer?.state==='started'){auditionPlayer.stop();auditionPlayer.dispose();auditionPlayer=null;$('auditionPlay').textContent='▶ AUDITION';}else audition(); });
+  $('keepCandidate').addEventListener('click',keepCandidate);
+  document.querySelectorAll('[data-transpose]').forEach(b=>b.addEventListener('click',()=>editSelected(n=>{n.midi=Math.max(0,Math.min(127,n.midi+Number(b.dataset.transpose)));})));
+  $('velocity').addEventListener('input',(e)=>editSelected(n=>{n.velocity=Math.max(1,Math.min(127,Number(e.target.value)))/127;}));
+  $('deleteNote').addEventListener('click',()=>{ const ch=midiChannel(); if(!ch||selectedNoteIndex==null)return; ch.midiNotes.splice(selectedNoteIndex,1); selectedNoteIndex=Math.min(selectedNoteIndex,ch.midiNotes.length-1); if(selectedNoteIndex<0)selectedNoteIndex=null; rebuildMidiPart(ch); renderMidi(); renderChannels(); });
+  $('addNote').addEventListener('click',()=>{ const ch=midiChannel(); if(!ch)return; ch.midiNotes.push({midi:60,time:0,duration:.5,velocity:.8,name:'C4'}); selectedNoteIndex=ch.midiNotes.length-1; rebuildMidiPart(ch); renderMidi();renderChannels(); });
+  $('roll').addEventListener('dblclick',(e)=>{ const ch=midiChannel(); if(!ch)return; const rect=e.currentTarget.getBoundingClientRect(); const x=(e.clientX-rect.left)/rect.width, y=(e.clientY-rect.top)/rect.height; const duration=Number(e.currentTarget.dataset.duration)||4, min=Number(e.currentTarget.dataset.min)||48, max=Number(e.currentTarget.dataset.max)||72; const time=Math.round((x*duration)*4)/4; const midi=Math.round(max-y*(max-min)); ch.midiNotes.push({midi:Math.max(0,Math.min(127,midi)),time,duration:.25,velocity:.8,name:''}); selectedNoteIndex=ch.midiNotes.length-1; rebuildMidiPart(ch);renderMidi();renderChannels(); });
+
+  ['Drums','Bass','Music','Vocal'].forEach(name=>newChannel(name));
+  Tone.getDestination().volume.value=-3; updateTempo(); renderChannels(); renderMidi();
+  fetch('/api/wondertoad/health').then(r=>r.ok?r.json():Promise.reject()).then(()=>{$('wtDot').classList.add('ok');$('wtStatus').textContent='Wondertoad connected';}).catch(()=>{$('wtStatus').textContent='Wondertoad unavailable';});
+  const token=new URLSearchParams(location.search).get('token'); if(token) loadHandoff(token);
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('/service-worker.js').catch(()=>{});
+</script>
 </body>
 </html>

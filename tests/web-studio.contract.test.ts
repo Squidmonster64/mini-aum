@@ -17,7 +17,7 @@ describe("Mini AUM web studio beta contract", () => {
   });
 
   it("exposes explicit audio sources and real loading controls", () => {
-    expect(mixer).toContain("SOURCE");
+    expect(studio).toContain("SOURCE");
     expect(studio).toContain("LOAD AUDIO");
     expect(mixer).toContain("OPEN WONDERTOAD");
     expect(mixer).toContain("No demo sound is hidden behind the strips");
@@ -41,10 +41,11 @@ describe("Mini AUM web studio beta contract", () => {
   });
 
   it("does not replace a channel DOM tree while a fader is moving", () => {
-    const volumeHandler = studio.slice(
-      studio.indexOf("volumeInput.addEventListener('input'"),
-      studio.indexOf("const panInput", studio.indexOf("volumeInput.addEventListener('input'")),
-    );
+    const start = studio.indexOf("volumeInput.addEventListener('input'");
+    const end = studio.indexOf("const panInput", start);
+    expect(start).toBeGreaterThan(-1);
+    expect(end).toBeGreaterThan(start);
+    const volumeHandler = studio.slice(start, end);
     expect(volumeHandler).toContain("ch.node.volume.value");
     expect(volumeHandler).not.toContain("renderChannels()");
   });
@@ -61,5 +62,6 @@ describe("Mini AUM web studio beta contract", () => {
     expect(sw).toContain("mini-aum-v2");
     expect(sw).toContain("event.request.mode === 'navigate'");
     expect(sw).toContain("url.pathname.startsWith('/api/')");
+    expect(sw).toContain("status: 503");
   });
 });
